@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>期末成绩查询</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);min-height:100vh;padding:20px 10px}
+.container{max-width:400px;margin:0 auto}
+.header{text-align:center;color:#fff;margin-bottom:30px}
+.header h1{font-size:24px;margin-bottom:8px}
+.header p{font-size:14px;opacity:0.85}
+.card{background:#fff;border-radius:16px;padding:24px 20px;box-shadow:0 10px 30px rgba(0,0,0,0.15);margin-bottom:20px}
+.card h2{font-size:18px;color:#333;margin-bottom:15px;text-align:center}
+.input-group{margin-bottom:15px}
+.input-group label{display:block;font-size:14px;color:#666;margin-bottom:6px}
+.input-group input{width:100%;padding:12px 14px;border:1.5px solid #ddd;border-radius:10px;font-size:16px;outline:none;transition:border-color .2s}
+.input-group input:focus{border-color:#667eea}
+.btn{width:100%;padding:13px;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border:none;border-radius:10px;font-size:16px;font-weight:bold;cursor:pointer;transition:opacity .2s}
+.btn:active{opacity:0.8}
+.btn:disabled{opacity:0.5;cursor:not-allowed}
+.error{color:#e74c3c;font-size:13px;text-align:center;margin-top:10px;min-height:20px}
+.result{display:none}
+.result-header{text-align:center;margin-bottom:20px}
+.result-header .name{font-size:22px;font-weight:bold;color:#333}
+.result-header .code{font-size:13px;color:#999;margin-top:4px}
+.score-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px}
+.score-item{background:linear-gradient(135deg,#f093fb,#f5576c);border-radius:12px;padding:14px 10px;text-align:center;color:#fff}
+.score-item.blue{background:linear-gradient(135deg,#4facfe,#00f2fe)}
+.score-item.green{background:linear-gradient(135deg,#43e97b,#38f9d7)}
+.score-item.orange{background:linear-gradient(135deg,#fa709a,#fee140)}
+.score-item .label{font-size:12px;opacity:0.9;margin-bottom:4px}
+.score-item .value{font-size:24px;font-weight:bold}
+.score-item .full{font-size:12px;opacity:0.8}
+.comment{background:#f8f9fa;border-radius:12px;padding:15px;margin-bottom:15px}
+.comment .label{font-size:12px;color:#999;margin-bottom:6px}
+.comment .text{font-size:14px;color:#555;line-height:1.6}
+.total-box{text-align:center;background:linear-gradient(135deg,#667eea,#764ba2);border-radius:12px;padding:15px;color:#fff;margin-bottom:15px}
+.total-box .label{font-size:13px;opacity:0.9}
+.total-box .value{font-size:32px;font-weight:bold;margin:5px 0}
+.total-box .rank{font-size:13px;opacity:0.85}
+.back-btn{width:100%;padding:11px;background:#f0f0f0;color:#666;border:none;border-radius:10px;font-size:14px;cursor:pointer}
+.back-btn:active{background:#e0e0e0}
+.footer{text-align:center;color:rgba(255,255,255,0.7);font-size:12px;margin-top:20px}
+</style>
+</head>
+<body>
+<div class="container">
+<div class="header"><h1>📝 期末成绩查询</h1><p>请输入姓名和查询码查看成绩</p></div>
+<div class="card" id="loginCard">
+<h2>🔐 身份验证</h2>
+<div class="input-group"><label>学生姓名</label><input id="nameInput" type="text" placeholder="请输入学生姓名"></div>
+<div class="input-group"><label>查询码</label><input id="codeInput" type="text" placeholder="请输入查询码"></div>
+<button class="btn" id="queryBtn" onclick="query()">查 询 成 绩</button>
+<div class="error" id="errorMsg"></div>
+</div>
+<div class="card result" id="resultCard">
+<div class="result-header"><div class="name" id="resultName"></div><div class="code" id="resultCode"></div></div>
+<div class="score-grid" id="scoreGrid"></div>
+<div class="total-box"><div class="label">总分</div><div class="value" id="totalScore"></div></div>
+<div class="comment"><div class="label">📋 老师评语</div><div class="text" id="commentText"></div></div>
+<button class="back-btn" onclick="backToLogin()">返回重新查询</button>
+</div>
+<div class="footer">本页面仅供家长查询本人学生成绩，请勿泄露查询码</div>
+</div>
+<script src="scores.js"></script>
+<script>
+function query(){
+  var name=document.getElementById('nameInput').value.trim();
+  var code=document.getElementById('codeInput').value.trim();
+  var err=document.getElementById('errorMsg');
+  if(!name||!code){err.textContent='请输入姓名和查询码';return}
+  err.textContent='查询中...';
+  document.getElementById('queryBtn').disabled=true;
+  setTimeout(function(){
+    var found=null;
+    for(var i=0;i<SCORES.length;i++){
+      if(SCORES[i].name===name&&SCORES[i].code===code){found=SCORES[i];break}
+    }
+    if(found){
+      showResult(found);
+    }else{
+      err.textContent='姓名或查询码错误，请核对后重试';
+    }
+    document.getElementById('queryBtn').disabled=false;
+  },500);
+}
+function showResult(s){
+  document.getElementById('loginCard').style.display='none';
+  document.getElementById('resultCard').style.display='block';
+  document.getElementById('resultName').textContent=s.name;
+  document.getElementById('resultCode').textContent='查询码：'+s.code;
+  var grid=document.getElementById('scoreGrid');
+  grid.innerHTML='';
+  var colors=['','blue','green','orange'];
+  var keys=Object.keys(s.scores);
+  for(var i=0;i<keys.length;i++){
+    var subj=keys[i];
+    var item=document.createElement('div');
+    item.className='score-item '+(colors[i%4]||'');
+    item.innerHTML='<div class="label">'+subj+'</div><div class="value">'+s.scores[subj]+'</div>';
+    grid.appendChild(item);
+  }
+  var total=0;
+  for(var i=0;i<keys.length;i++){total+=s.scores[keys[i]]}
+  document.getElementById('totalScore').textContent=total;
+  document.getElementById('commentText').textContent=s.comment||'继续努力，加油！';
+  document.getElementById('errorMsg').textContent='';
+}
+function backToLogin(){
+  document.getElementById('loginCard').style.display='block';
+  document.getElementById('resultCard').style.display='none';
+  document.getElementById('nameInput').value='';
+  document.getElementById('codeInput').value='';
+}
+document.addEventListener('keydown',function(e){
+  if(e.key==='Enter')query();
+});
+</script>
+</body>
+</html>
